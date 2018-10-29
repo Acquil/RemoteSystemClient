@@ -10,6 +10,7 @@ import com.sun.management.OperatingSystemMXBean;
 import java.net.Socket;
 import javax.swing.ImageIcon;
 
+
 class ScreenshotClient extends Thread {
 
     private static Runtime runtime = Runtime.getRuntime();
