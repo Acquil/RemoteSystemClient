@@ -3,11 +3,15 @@ package TCP;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
-import java.net.Socket;
+
+
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import javax.swing.ImageIcon;
 
 
@@ -28,13 +32,21 @@ class ScreenshotClient extends Thread {
         start();
     }
 
+    private String getNetBytes(String type, String intf) throws IOException{
+        String f = new String("/sys/class/net/"+intf+"/statistics/"+type+"_bytes");
+
+        String targetFileStr = new String(Files.readAllBytes(Paths.get(f)), StandardCharsets.UTF_8);
+//        System.out.println(targetFileStr);
+        return targetFileStr;
+    }
+
+
     public void run(){
         ObjectOutputStream oos = null;
 
 
         try{
             oos = new ObjectOutputStream(socket.getOutputStream());
-//            oos.writeObject(rectangle);
         }catch(IOException ex){
             ex.printStackTrace();
         }
@@ -44,19 +56,59 @@ class ScreenshotClient extends Thread {
             ImageIcon imageIcon = new ImageIcon(image);
 
             Data toSend = new Data();
-//            Data toSend = new Data("TCP","IP","Package");
 
             toSend.setTotalMemory(osBean.getTotalPhysicalMemorySize());
             toSend.setFreeMemory(osBean.getFreePhysicalMemorySize());
             toSend.setCpuLoad(osBean.getSystemCpuLoad());
             toSend.setScreen(imageIcon);
 
+//            System.out.println(toSend.getOSName());
+//           InetAddress address = null;
+//           NetworkInterface nif = null;
+//           try {
+//               address = InetAddress.getLocalHost();
+//           } catch (UnknownHostException e) {
+//               e.printStackTrace();
+//           }
+//
+//           try {
+//               nif = NetworkInterface.getByInetAddress(
+//                       InetAddress.getByName("localhost"));
+//           } catch (SocketException e) {
+//               e.printStackTrace();
+//           } catch (UnknownHostException e) {
+//               e.printStackTrace();
+//           }
+//           try {
+//               nif = NetworkInterface.getByInetAddress(
+//                       InetAddress.getByAddress(address.getAddress()));
+//           } catch (SocketException e) {
+//               e.printStackTrace();
+//           } catch (UnknownHostException e) {
+//               e.printStackTrace();
+//           }
+
+//           System.out.println(nif);
+
+           if(toSend.getOSName().equals("Linux")){
+                try {
+                    toSend.setRxData(getNetBytes("rx","wlp2s0"));
+                    toSend.setTxData(getNetBytes("tx","wlp2s0"));
+
+//                    System.out.println(getNetBytes("tx","wlp2s0"));
+//                    System.out.println(getNetBytes("rx","wlp2s0"));
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             try {
-                System.out.println("before sending image");
+                System.out.println("Sending...");
 //                oos.writeObject(imageIcon);
                 oos.writeObject(toSend);
                 oos.reset();
-                System.out.println("New screenshot sent");
+                System.out.println("Sent");
             } catch (IOException ex) {
                ex.printStackTrace();
             }
